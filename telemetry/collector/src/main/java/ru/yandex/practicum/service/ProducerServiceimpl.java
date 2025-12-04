@@ -13,7 +13,6 @@ import ru.yandex.practicum.model.sensor.SensorEvent;
 @RequiredArgsConstructor
 @Service
 public class ProducerServiceimpl implements ProducerService {
-
     @Value("${collector.kafka.producer.topics.sensors-events}")
     private String sensorsEventsTopic;
     @Value("${collector.kafka.producer.topics.hubs-events}")
