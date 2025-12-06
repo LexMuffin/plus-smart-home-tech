@@ -23,6 +23,7 @@ public class KafkaClient implements AutoCloseable {
 
     @Override
     public void close() throws Exception {
+        producer.flush();
         producer.close();
     }
 }

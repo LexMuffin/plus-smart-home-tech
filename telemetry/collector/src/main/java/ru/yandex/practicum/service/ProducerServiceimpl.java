@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.kafka.KafkaClient;
-import ru.yandex.practicum.kafka.telemetry.event.HubEventAvro;
 import ru.yandex.practicum.mapper.HubEventMapper;
 import ru.yandex.practicum.mapper.SensorEventMapper;
 import ru.yandex.practicum.model.hub.HubEvent;
@@ -26,7 +25,7 @@ public class ProducerServiceimpl implements ProducerService {
     public void processHubEvent(HubEvent hubEvent) {
         kafkaClient.send(
                 hubsEventsTopic,
-                null,
+                hubEvent.getHubId(),
                 hubEventMapper.toAvro(hubEvent)
         );
     }
@@ -35,7 +34,7 @@ public class ProducerServiceimpl implements ProducerService {
     public void processSensorEvent(SensorEvent sensorEvent) {
         kafkaClient.send(
                 sensorsEventsTopic,
-                null,
+                sensorEvent.getHubId(),
                 sensorEventMapper.toAvro(sensorEvent)
         );
     }
