@@ -1,0 +1,25 @@
+collector:
+  kafka:
+    # Общие настройки
+    bootstrap-servers: localhost:9092
+
+    # Топики
+    topics:
+      sensors-events: telemetry.sensors.v1
+      hubs-events: telemetry.hubs.v1
+      snapshots-events: telemetry.snapshots.v1
+
+    # Producer настройки
+    producer:
+      key.serializer: org.apache.kafka.common.serialization.StringSerializer
+      value.serializer: org.apache.kafka.common.serialization.ByteArraySerializer
+      acks: all
+      linger.ms: 5
+      batch.size: 16384
+      buffer.memory: 33554432
+
+    # Consumer настройки
+    consumer:
+      group.id: aggregator-group
+      key.deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value.deserializer: ru.yandex.practicum.deserializer.SensorEventDeserializer
