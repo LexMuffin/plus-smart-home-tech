@@ -1,59 +1,45 @@
 package ru.yandex.practicum.kafka;
 
+import jakarta.annotation.PostConstruct;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.avro.specific.SpecificRecordBase;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.time.Duration;
-import java.util.Properties;
 
+@Slf4j
+@Getter
+@Setter
 @Configuration
+@ConfigurationProperties("collector.kafka")
 public class KafkaConfig {
 
-    @Value("${collector.kafka.bootstrap-servers}")
+    // Общие настройки
     private String bootstrapServers;
 
-    @Bean
-    @ConfigurationProperties(prefix = "collector.kafka.producer")
-    public Properties producerProperties() {
-        Properties props = new Properties();
-        props.setProperty("bootstrap.servers", bootstrapServers);
-        props.setProperty("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-        props.setProperty("value.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer");
-        return props;
-    }
+    // Инжектим конфигурационные классы
+    @Autowired
+    private AggregatorProducerConfig producerConfig;
 
-    @Bean
-    @ConfigurationProperties(prefix = "collector.kafka.consumer")
-    public Properties consumerProperties() {
-        Properties props = new Properties();
-        props.setProperty("bootstrap.servers", "localhost:9092");
-        props.setProperty("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
-        props.setProperty("value.deserializer", "ru.yandex.practicum.deserializer.SensorEventDeserializer");
-        props.setProperty("group.id", "aggregator-group");
-        return props;
-    }
+    @Autowired
+    private AggregatorConsumerConfig consumerConfig;
 
-    @Bean(destroyMethod = "close")
-    public Producer<String, SpecificRecordBase> kafkaProducer(Properties producerProperties) {
-        return new KafkaProducer<>(producerProperties);
-    }
-
-    @Bean(destroyMethod = "close")
-    public Consumer<String, SpecificRecordBase> kafkaConsumer(Properties consumerProperties) {
-        return new KafkaConsumer<>(consumerProperties);
-    }
+    @Autowired
+    private AggregatorTopicsConfig topicsConfig;
 
     @Bean
     public KafkaClient kafkaClient(
-            Producer<String, SpecificRecordBase> kafkaProducer,
-            Consumer<String, SpecificRecordBase> kafkaConsumer) {
+            KafkaProducer<String, SpecificRecordBase> kafkaProducer,
+            KafkaConsumer<String, SpecificRecordBase> kafkaConsumer) {
 
         return new KafkaClient() {
             @Override
@@ -67,21 +53,28 @@ public class KafkaConfig {
             }
 
             @Override
+            public AggregatorTopicsConfig getTopics() {
+                return topicsConfig;
+            }
+
+            @Override
             public void close() {
                 try {
                     if (kafkaProducer != null) {
                         kafkaProducer.flush();
                         kafkaProducer.close(Duration.ofSeconds(10));
                     }
+                } catch (Exception e) {
+                }
+
+                try {
                     if (kafkaConsumer != null) {
                         kafkaConsumer.commitSync();
                         kafkaConsumer.close();
                     }
                 } catch (Exception e) {
-                    // Игнорируем ошибки при закрытии
                 }
             }
         };
     }
 }
-
