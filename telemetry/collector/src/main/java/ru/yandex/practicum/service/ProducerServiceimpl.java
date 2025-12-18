@@ -1,67 +1,65 @@
 package ru.yandex.practicum.service;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.grpc.telemetry.event.HubEventProto;
 import ru.yandex.practicum.grpc.telemetry.event.SensorEventProto;
 import ru.yandex.practicum.kafka.KafkaClient;
-import ru.yandex.practicum.mapper.HubEventMapper;
-import ru.yandex.practicum.mapper.ProtoToAvroHubEventMapper;
-import ru.yandex.practicum.mapper.ProtoToAvroSensorEventMapper;
-import ru.yandex.practicum.mapper.SensorEventMapper;
-import ru.yandex.practicum.model.hub.HubEvent;
-import ru.yandex.practicum.model.sensor.SensorEvent;
+import ru.yandex.practicum.mapper.hub.HubEventMapper;
+import ru.yandex.practicum.mapper.sensor.SensorEventMapper;
 
-@RequiredArgsConstructor
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+
 @Service
 public class ProducerServiceimpl implements ProducerService {
-    @Value("${collector.kafka.producer.topics.sensors-events}")
+    @Value("${collector.kafka.topics.sensors}")
     private String sensorsEventsTopic;
-    @Value("${collector.kafka.producer.topics.hubs-events}")
+    @Value("${collector.kafka.topics.hubs}")
     private String hubsEventsTopic;
 
     private final KafkaClient kafkaClient;
-    private final HubEventMapper hubEventMapper;
-    private final SensorEventMapper sensorEventMapper;
-    private final ProtoToAvroHubEventMapper protoToAvroHubEventMapper;
-    private final ProtoToAvroSensorEventMapper protoToAvroSensorEventMapper;
+    private final Map<SensorEventProto.PayloadCase, SensorEventMapper> sensorEventMappers;
+    private final Map<HubEventProto.PayloadCase, HubEventMapper> hubEventMappers;
 
-    @Override
-    public void processHubEvent(HubEvent hubEvent) {
-        kafkaClient.send(
-                hubsEventsTopic,
-                hubEvent.getHubId(),
-                hubEventMapper.toAvro(hubEvent)
-        );
-    }
-
-    @Override
-    public void processSensorEvent(SensorEvent sensorEvent) {
-        kafkaClient.send(
-                sensorsEventsTopic,
-                sensorEvent.getHubId(),
-                sensorEventMapper.toAvro(sensorEvent)
-        );
+    public ProducerServiceimpl (
+            KafkaClient kafkaClient,
+            List<SensorEventMapper> sensorEventMappers,
+            List<HubEventMapper> hubEventMappers
+    ) {
+        this.kafkaClient = kafkaClient;
+        this.sensorEventMappers = sensorEventMappers.stream()
+                .collect(Collectors.toMap(SensorEventMapper::getSensorEventType, Function.identity()));
+        this.hubEventMappers = hubEventMappers.stream()
+                .collect(Collectors.toMap(HubEventMapper::getHubEventType, Function.identity()));
     }
 
     @Override
     public void processSensorEvent(SensorEventProto sensorEventProto) {
-        kafkaClient.send(
-                sensorsEventsTopic,
-                sensorEventProto.getHubId(),
-                protoToAvroSensorEventMapper.toAvro(sensorEventProto)
-        );
+        if (sensorEventMappers.containsKey(sensorEventProto.getPayloadCase())) {
+            kafkaClient.send(
+                    sensorsEventsTopic,
+                    sensorEventProto.getHubId(),
+                    sensorEventMappers.get(sensorEventProto.getPayloadCase()).mapToAvro(sensorEventProto)
+            );
+        } else {
+            throw new IllegalArgumentException("Нет подходящего маппера");
+        }
     }
 
     @Override
     public void processHubEvent(HubEventProto hubEventProto) {
-        kafkaClient.send(
-                hubsEventsTopic,
-                hubEventProto.getHubId(),
-                protoToAvroHubEventMapper.toAvro(hubEventProto)
-        );
+        if (hubEventMappers.containsKey(hubEventProto.getPayloadCase())) {
+            kafkaClient.send(
+                    hubsEventsTopic,
+                    hubEventProto.getHubId(),
+                    hubEventMappers.get(hubEventProto.getPayloadCase()).mapToAvro(hubEventProto)
+            );
+        } else {
+            throw new IllegalArgumentException("Нет подходящего маппера");
+        }
     }
-
-
 }

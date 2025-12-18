@@ -26,4 +26,6 @@ public class KafkaClient implements AutoCloseable {
         producer.flush();
         producer.close();
     }
+
+
 }
