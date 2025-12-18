@@ -10,8 +10,6 @@ import net.devh.boot.grpc.server.service.GrpcService;
 import ru.yandex.practicum.grpc.telemetry.collector.CollectorControllerGrpc;
 import ru.yandex.practicum.grpc.telemetry.event.HubEventProto;
 import ru.yandex.practicum.grpc.telemetry.event.SensorEventProto;
-import ru.yandex.practicum.mapper.ProtoToAvroHubEventMapper;
-import ru.yandex.practicum.mapper.ProtoToAvroSensorEventMapper;
 import ru.yandex.practicum.service.ProducerService;
 
 @Slf4j
