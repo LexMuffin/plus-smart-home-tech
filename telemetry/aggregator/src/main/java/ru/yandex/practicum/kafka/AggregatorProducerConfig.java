@@ -14,7 +14,7 @@ import java.util.Properties;
 @Getter
 @Setter
 @Configuration
-@ConfigurationProperties("collector.kafka.producer")
+@ConfigurationProperties("aggregator.kafka.producer")
 public class AggregatorProducerConfig {
 
     private String bootstrapServers;

@@ -20,7 +20,7 @@ import java.time.Duration;
 @Getter
 @Setter
 @Configuration
-@ConfigurationProperties("collector.kafka")
+@ConfigurationProperties("aggregator.kafka")
 public class KafkaConfig {
 
     // Общие настройки
@@ -32,9 +32,6 @@ public class KafkaConfig {
 
     @Autowired
     private AggregatorConsumerConfig consumerConfig;
-
-    @Autowired
-    private AggregatorTopicsConfig topicsConfig;
 
     @Bean
     public KafkaClient kafkaClient(
@@ -50,11 +47,6 @@ public class KafkaConfig {
             @Override
             public Consumer<String, SpecificRecordBase> getConsumer() {
                 return kafkaConsumer;
-            }
-
-            @Override
-            public AggregatorTopicsConfig getTopics() {
-                return topicsConfig;
             }
 
             @Override

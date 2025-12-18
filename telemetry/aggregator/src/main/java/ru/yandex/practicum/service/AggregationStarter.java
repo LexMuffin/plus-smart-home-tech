@@ -1,5 +1,6 @@
 package ru.yandex.practicum.service;
 
+import jakarta.annotation.PostConstruct;
 import org.apache.avro.specific.SpecificRecordBase;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -20,10 +21,10 @@ import java.util.Optional;
 @Component
 public class AggregationStarter {
 
-    @Value("${collector.kafka.topics.sensors-events}")
+    @Value("${aggregator.kafka.topics.sensors-events}")
     private String sensorsEventsTopic;
 
-    @Value("${collector.kafka.topics.snapshots-events}")
+    @Value("${aggregator.kafka.topics.snapshots-events}")
     private String snapshotsEventsTopic;
 
     private final Producer<String, SpecificRecordBase> producer;
