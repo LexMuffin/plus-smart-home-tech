@@ -1,8 +1,8 @@
 spring:
   application:
-    name: collector
+    name: aggregator
 
-collector:
+aggregator:
   kafka:
     bootstrap-servers: localhost:9092
     
