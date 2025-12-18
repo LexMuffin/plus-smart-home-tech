@@ -1,25 +1,30 @@
+spring:
+  application:
+    name: collector
+
 collector:
   kafka:
-    # Общие настройки
     bootstrap-servers: localhost:9092
+    
+    producer:
+      bootstrap-servers: localhost:9092
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.ByteArraySerializer
 
-    # Топики
+    consumer:
+      bootstrap-servers: localhost:9092
+      group-id: aggregator-group
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: ru.yandex.practicum.deserializer.SensorEventDeserializer
+
     topics:
       sensors-events: telemetry.sensors.v1
       hubs-events: telemetry.hubs.v1
       snapshots-events: telemetry.snapshots.v1
 
-    # Producer настройки
-    producer:
-      key.serializer: org.apache.kafka.common.serialization.StringSerializer
-      value.serializer: org.apache.kafka.common.serialization.ByteArraySerializer
-      acks: all
-      linger.ms: 5
-      batch.size: 16384
-      buffer.memory: 33554432
-
-    # Consumer настройки
-    consumer:
-      group.id: aggregator-group
-      key.deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value.deserializer: ru.yandex.practicum.deserializer.SensorEventDeserializer
+logging:
+  level:
+    ru.yandex.practicum: DEBUG
+    root: INFO
