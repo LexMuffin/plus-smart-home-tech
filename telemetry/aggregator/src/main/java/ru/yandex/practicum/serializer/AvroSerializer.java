@@ -5,34 +5,29 @@ import org.apache.avro.io.DatumWriter;
 import org.apache.avro.io.EncoderFactory;
 import org.apache.avro.specific.SpecificDatumWriter;
 import org.apache.avro.specific.SpecificRecordBase;
-import org.apache.kafka.common.errors.SerializationException;
 import org.apache.kafka.common.serialization.Serializer;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-public class AvroSerializer {
+public class AvroSerializer<T extends SpecificRecordBase> implements Serializer<T> {
 
-    private static final EncoderFactory encoderFactory = EncoderFactory.get();
-    private static final ThreadLocal<BinaryEncoder> encoderThreadLocal = new ThreadLocal<>();
-
-    public static <T extends SpecificRecordBase> byte[] serialize(T record) {
-        if (record == null) {
+    @Override
+    public byte[] serialize(String topic, T data) {
+        if (data == null) {
             return null;
         }
-        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            BinaryEncoder encoder = encoderFactory.binaryEncoder(out, encoderThreadLocal.get());
 
-            DatumWriter<T> writer = new SpecificDatumWriter<>(record.getSchema());
-            writer.write(record, encoder);
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        try {
+            DatumWriter<T> datumWriter = new SpecificDatumWriter<>(data.getSchema());
+            BinaryEncoder encoder = EncoderFactory.get().binaryEncoder(outputStream, null);
+            datumWriter.write(data, encoder);
             encoder.flush();
-
-            encoderThreadLocal.set(encoder);
-            return out.toByteArray();
-        } catch (IOException ex) {
-            throw new SerializationException(
-                    String.format("Ошибка сериализации Avro объекта типа [%s]",
-                            record.getClass().getSimpleName()), ex);
+            outputStream.close();
+            return outputStream.toByteArray();
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to serialize Avro object", e);
         }
     }
 }

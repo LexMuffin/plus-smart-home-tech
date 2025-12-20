@@ -36,7 +36,6 @@ public class SnapshotAggregator {
         if (oldState != null) {
             Instant oldTimestamp = oldState.getTimestamp();
 
-            // Проверяем, если старое событие более новое или данные не изменились
             if (oldTimestamp.isAfter(newTimestamp) ||
                     oldState.getData().equals(event.getPayload())) {
                 return Optional.empty();
@@ -50,7 +49,6 @@ public class SnapshotAggregator {
 
         sensorStates.put(sensorId, newState);
 
-        // Обновляем снапшот (создаём копию с обновлёнными данными)
         SensorsSnapshotAvro updateSnapshot = SensorsSnapshotAvro.newBuilder(snapshot)
                 .setTimestamp(event.getTimestamp())
                 .setSensorsState(sensorStates)
