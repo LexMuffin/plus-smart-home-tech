@@ -19,14 +19,10 @@ public class Analyzer {
         SnapshotEventProcessor snapshotProcessor =
                 context.getBean(SnapshotEventProcessor.class);
 
-        // запускаем в отдельном потоке обработчик событий
-        // от пользовательских хабов
         Thread hubEventsThread = new Thread(hubEventProcessor);
         hubEventsThread.setName("HubEventHandlerThread");
         hubEventsThread.start();
 
-        // В текущем потоке начинаем обработку
-        // снимков состояния датчиков
         snapshotProcessor.start();
     }
 }
