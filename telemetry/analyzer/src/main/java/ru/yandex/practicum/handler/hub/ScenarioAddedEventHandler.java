@@ -6,14 +6,13 @@ import ru.yandex.practicum.kafka.telemetry.event.DeviceActionAvro;
 import ru.yandex.practicum.kafka.telemetry.event.HubEventAvro;
 import ru.yandex.practicum.kafka.telemetry.event.ScenarioAddedEventAvro;
 import ru.yandex.practicum.kafka.telemetry.event.ScenarioConditionAvro;
-import ru.yandex.practicum.model.Scenario;
-import ru.yandex.practicum.repository.ActionRepository;
-import ru.yandex.practicum.repository.ConditionRepository;
-import ru.yandex.practicum.repository.ScenarioRepository;
-import ru.yandex.practicum.repository.SensorRepository;
+import ru.yandex.practicum.model.*;
+import ru.yandex.practicum.repository.*;
 
 import java.util.List;
 import java.util.Optional;
+
+import static org.hibernate.engine.config.spi.StandardConverters.asInteger;
 
 @Component
 @RequiredArgsConstructor
@@ -23,6 +22,8 @@ public class ScenarioAddedEventHandler implements HubEventHandler {
     private final ScenarioRepository scenarioRepository;
     private final ConditionRepository conditionRepository;
     private final ActionRepository actionRepository;
+    private final ScenarioActionRepository scenarioActionRepository;
+    private final ScenarioConditionRepository scenarioConditionRepository;
 
     @Override
     public String getEventType() {
@@ -46,10 +47,14 @@ public class ScenarioAddedEventHandler implements HubEventHandler {
         }
 
         Optional<Scenario> scenario = scenarioRepository.findByHubIdAndName(scenarioAddedEventAvro.getName(), event.getHubId());
-        scenario.ifPresent(prevScenario -> scenarioRepository.deleteByHubIdAndName(
-                prevScenario.getHubId(),
-                prevScenario.getName()
-        ));
+        scenario.ifPresent(prevScenario -> {
+            scenarioActionRepository.deleteByScenario(prevScenario);
+            scenarioConditionRepository.deleteByScenario(prevScenario);
+            scenarioRepository.deleteByHubIdAndName(
+                    prevScenario.getHubId(),
+                    prevScenario.getName()
+            );
+        });
 
         Scenario scenarioToUpload = Scenario.builder()
                 .name(scenarioAddedEventAvro.getName())
@@ -57,5 +62,64 @@ public class ScenarioAddedEventHandler implements HubEventHandler {
                 .build();
 
         scenarioRepository.save(scenarioToUpload);
+
+        saveConditions(scenarioToUpload, event, scenarioAddedEventAvro);
+        saveActions(scenarioToUpload, event, scenarioAddedEventAvro);
+    }
+
+
+    private void saveConditions(Scenario scenario, HubEventAvro event, ScenarioAddedEventAvro avro) {
+        for (ScenarioConditionAvro conditionAvro : avro.getConditions()) {
+            Sensor sensor = sensorRepository.findById(conditionAvro.getSensorId())
+                    .orElseThrow(() -> new IllegalArgumentException("Сенсор не найден"));
+
+            Condition condition = conditionRepository.save(
+                    Condition.builder()
+                            .type(conditionAvro.getType())
+                            .operation(conditionAvro.getOperation())
+                            .value(asInteger(conditionAvro.getValue()))
+                            .build()
+            );
+
+            scenarioConditionRepository.save(
+                    ScenarioCondition.builder()
+                            .scenario(scenario)
+                            .sensor(sensor)
+                            .condition(condition)
+                            .id(new ScenarioConditionId(
+                                    scenario.getId(),
+                                    sensor.getId(),
+                                    condition.getId()
+                            ))
+                            .build()
+            );
+        }
+    }
+
+    private void saveActions(Scenario scenario, HubEventAvro event, ScenarioAddedEventAvro avro) {
+        for (DeviceActionAvro actionAvro : avro.getActions()) {
+            Sensor sensor = sensorRepository.findById(actionAvro.getSensorId())
+                    .orElseThrow(() -> new IllegalArgumentException("Сенсор не найден"));
+
+            Action action = actionRepository.save(
+                    Action.builder()
+                            .type(actionAvro.getType())
+                            .value(actionAvro.getValue())
+                            .build()
+            );
+
+            scenarioActionRepository.save(
+                    ScenarioAction.builder()
+                            .scenario(scenario)
+                            .sensor(sensor)
+                            .action(action)
+                            .id(new ScenarioActionId(
+                                    scenario.getId(),
+                                    sensor.getId(),
+                                    action.getId()
+                            ))
+                            .build()
+            );
+        }
     }
 }
