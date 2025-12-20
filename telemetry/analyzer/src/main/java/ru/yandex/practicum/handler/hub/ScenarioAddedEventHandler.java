@@ -12,8 +12,6 @@ import ru.yandex.practicum.repository.*;
 import java.util.List;
 import java.util.Optional;
 
-import static org.hibernate.engine.config.spi.StandardConverters.asInteger;
-
 @Component
 @RequiredArgsConstructor
 public class ScenarioAddedEventHandler implements HubEventHandler {
@@ -121,5 +119,14 @@ public class ScenarioAddedEventHandler implements HubEventHandler {
                             .build()
             );
         }
+    }
+
+    private Integer asInteger(Object value) {
+        if (value instanceof Integer) {
+            return (Integer) value;
+        } else if (value instanceof Boolean) {
+            return ((Boolean) value) ? 1 : 0;
+        }
+        throw new IllegalArgumentException("Неподдерживаемый тип значения: " + value.getClass());
     }
 }
