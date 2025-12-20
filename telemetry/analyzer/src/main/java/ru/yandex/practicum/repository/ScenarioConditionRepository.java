@@ -11,4 +11,5 @@ import java.util.List;
 @Repository
 public interface ScenarioConditionRepository extends JpaRepository<ScenarioCondition, ScenarioConditionId> {
     List<ScenarioCondition> findByScenario(Scenario scenario);
+    void deleteByScenario(Scenario scenario);
 }

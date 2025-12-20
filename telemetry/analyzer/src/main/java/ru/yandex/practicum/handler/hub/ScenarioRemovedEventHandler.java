@@ -5,9 +5,7 @@ import org.springframework.stereotype.Component;
 import ru.yandex.practicum.kafka.telemetry.event.HubEventAvro;
 import ru.yandex.practicum.kafka.telemetry.event.ScenarioRemovedEventAvro;
 import ru.yandex.practicum.model.Scenario;
-import ru.yandex.practicum.repository.ActionRepository;
-import ru.yandex.practicum.repository.ConditionRepository;
-import ru.yandex.practicum.repository.ScenarioRepository;
+import ru.yandex.practicum.repository.*;
 
 import java.util.Optional;
 
@@ -16,6 +14,8 @@ import java.util.Optional;
 public class ScenarioRemovedEventHandler implements HubEventHandler {
 
     private final ScenarioRepository scenarioRepository;
+    private final ScenarioActionRepository scenarioActionRepository;
+    private final ScenarioConditionRepository scenarioConditionRepository;
 
     @Override
     public String getEventType() {
@@ -30,6 +30,8 @@ public class ScenarioRemovedEventHandler implements HubEventHandler {
 
         if (scenarioOpt.isPresent()) {
             Scenario scenario = scenarioOpt.get();
+            scenarioActionRepository.deleteByScenario(scenario);
+            scenarioConditionRepository.deleteByScenario(scenario);
             scenarioRepository.deleteByHubIdAndName(event.getHubId(), scenario.getName());
         }
     }
