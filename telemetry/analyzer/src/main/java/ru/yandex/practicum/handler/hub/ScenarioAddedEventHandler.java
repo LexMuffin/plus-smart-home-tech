@@ -65,7 +65,6 @@ public class ScenarioAddedEventHandler implements HubEventHandler {
         saveActions(scenarioToUpload, event, scenarioAddedEventAvro);
     }
 
-
     private void saveConditions(Scenario scenario, HubEventAvro event, ScenarioAddedEventAvro avro) {
         for (ScenarioConditionAvro conditionAvro : avro.getConditions()) {
             Sensor sensor = sensorRepository.findById(conditionAvro.getSensorId())
