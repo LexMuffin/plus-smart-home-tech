@@ -1,5 +1,6 @@
 package ru.yandex.practicum.processor;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -17,6 +18,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Component
+@Slf4j
 public class HubEventProcessor implements Runnable {
 
     private final Consumer<String, HubEventAvro> hubConsumer;
@@ -58,6 +60,7 @@ public class HubEventProcessor implements Runnable {
         } catch (WakeupException ignored) {
 
         } catch (Exception e) {
+            log.error("Ошибка при обработке событий", e);
         } finally {
             try {
                 hubConsumer.commitSync();

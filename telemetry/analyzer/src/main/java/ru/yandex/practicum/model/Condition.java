@@ -17,16 +17,16 @@ public class Condition {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
-    Long id;
+    private Long id;
 
     @Column(name = "type")
     @Enumerated(EnumType.STRING)
-    ConditionTypeAvro type;
+    private ConditionTypeAvro type;
 
     @Column(name = "operation")
     @Enumerated(EnumType.STRING)
-    ConditionOperationAvro operation;
+    private ConditionOperationAvro operation;
 
     @Column(name = "value")
-    Integer value;
+    private Integer value;
 }

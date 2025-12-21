@@ -16,12 +16,12 @@ public class Action {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
-    Long id;
+    private Long id;
 
     @Column(name = "type")
     @Enumerated(EnumType.STRING)
-    ActionTypeAvro type;
+    private ActionTypeAvro type;
 
     @Column(name = "value")
-    Integer value;
+    private Integer value;
 }

@@ -13,7 +13,7 @@ import lombok.*;
 public class ScenarioCondition {
 
     @EmbeddedId
-    ScenarioConditionId id;
+    private ScenarioConditionId id;
 
     @MapsId("scenario")
     @ManyToOne(fetch = FetchType.LAZY)
