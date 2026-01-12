@@ -19,7 +19,6 @@ import java.time.Duration;
 @Getter
 @Setter
 @Configuration
-@ConfigurationProperties("aggregator.kafka")
 public class KafkaConfig {
 
     @Autowired

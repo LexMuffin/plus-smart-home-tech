@@ -2,6 +2,7 @@ package ru.yandex.practicum.kafka;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.avro.specific.SpecificRecordBase;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -11,10 +12,11 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.Properties;
 
+@Slf4j
 @Getter
 @Setter
 @Configuration
-@ConfigurationProperties("aggregator.kafka.producer")
+@ConfigurationProperties(prefix = "aggregator.kafka.producer")
 public class AggregatorProducerConfig {
 
     private String bootstrapServers;
