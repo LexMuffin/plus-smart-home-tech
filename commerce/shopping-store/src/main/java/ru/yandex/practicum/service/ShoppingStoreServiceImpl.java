@@ -98,7 +98,7 @@ public class ShoppingStoreServiceImpl implements ShoppingStoreService {
         productRepository.save(product);
         log.info("Продукта с ID {} обновлен", product.getProductId());
 
-        return Boolean.TRUE;
+        return true;
     }
 
     @Override
@@ -109,11 +109,11 @@ public class ShoppingStoreServiceImpl implements ShoppingStoreService {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new ProductNotFoundException("Продукт " + productId + " не найден"));
 
-        product.setProductState(ProductState.DEACTIVE);
+        product.setProductState(ProductState.DEACTIVATE);
 
         productRepository.save(product);
         log.debug("Продукт с ID {} удален", productId);
 
-        return Boolean.TRUE;
+        return true;
     }
 }

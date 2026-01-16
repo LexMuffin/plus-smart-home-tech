@@ -1,6 +1,7 @@
 package ru.yandex.practicum.controller;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -24,7 +25,7 @@ public class ShoppingStoreController {
 
     @GetMapping("/{productId}")
     @ResponseStatus(HttpStatus.OK)
-    public ProductDto getProductById(@PathVariable UUID productId) {
+    public ProductDto getProductById(@PathVariable @NotNull UUID productId) {
         log.info("GET продукт с ID: {}", productId);
         return shoppingStoreService.getProductById(productId);
     }

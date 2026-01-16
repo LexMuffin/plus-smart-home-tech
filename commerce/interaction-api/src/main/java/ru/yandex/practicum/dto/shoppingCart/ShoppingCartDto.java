@@ -21,7 +21,7 @@ import static lombok.AccessLevel.PRIVATE;
 public class ShoppingCartDto {
 
     @NotBlank
-    String shoppingCartId;
+    UUID shoppingCartId;
 
     @NotNull
     Map<UUID, Integer> products;

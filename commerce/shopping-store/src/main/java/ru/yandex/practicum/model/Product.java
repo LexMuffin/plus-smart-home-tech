@@ -28,27 +28,29 @@ public class Product {
     @Column(name = "product_id", updatable = false, nullable = false)
     UUID productId;
 
-    @Column(name = "product_name")
+    @Column(name = "product_name", nullable = false)
     String productName;
 
-    @Column(nullable = false)
+    @Column(name = "description", nullable = false)
     String description;
 
     @Column(name = "image_src")
     String imageSrc;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "quantity_state")
-    QuantityState quantityState;
+    @Column(name = "quantity_state", nullable = false)
+    @Builder.Default
+    QuantityState quantityState = QuantityState.ENOUGH;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "product_state")
-    ProductState productState;
+    @Column(name = "product_state", nullable = false)
+    @Builder.Default
+    ProductState productState = ProductState.ACTIVE;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "product_category")
+    @Column(name = "product_category", nullable = false)
     ProductCategory productCategory;
 
-    @Column(precision = 10, scale = 2)
+    @Column(name = "price", nullable = false, precision = 10, scale = 2)
     BigDecimal price;
 }
