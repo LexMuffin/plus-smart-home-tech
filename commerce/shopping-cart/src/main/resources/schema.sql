@@ -11,5 +11,5 @@ CREATE TABLE IF NOT EXISTS carts.products_in_shopping_carts (
     product_id UUID NOT NULL,
     quantity INTEGER NOT NULL CHECK (quantity > 0),
     PRIMARY KEY (shopping_cart_id, product_id),
-    FOREIGN KEY (shopping_cart_id) REFERENCES shopping_carts(shopping_cart_id) ON DELETE CASCADE
+    FOREIGN KEY (shopping_cart_id) REFERENCES carts.shopping_carts(shopping_cart_id) ON DELETE CASCADE
 );
