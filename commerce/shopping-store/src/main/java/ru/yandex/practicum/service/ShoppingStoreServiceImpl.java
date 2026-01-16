@@ -54,8 +54,6 @@ public class ShoppingStoreServiceImpl implements ShoppingStoreService {
             throw new IllegalArgumentException("product_id должен быть null при создании нового продукта");
         }
         Product product = ProductMapper.INSTANCE.toEntity(productDto);
-        product.setProductState(ProductState.ACTIVE);
-        product.setQuantityState(QuantityState.ENOUGH);
 
         Product productToSave = productRepository.save(product);
         log.info("Продукт с ID {} сохранен", productToSave.getProductId());

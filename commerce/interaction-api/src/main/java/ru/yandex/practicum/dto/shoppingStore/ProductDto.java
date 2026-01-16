@@ -1,10 +1,12 @@
 package ru.yandex.practicum.dto.shoppingStore;
 
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 import static lombok.AccessLevel.PRIVATE;
@@ -32,6 +34,6 @@ public class ProductDto {
 
     ProductCategory productCategory;
 
-    @NotNull
-    Double price;
+    @Digits(integer = 10, fraction = 2)
+    BigDecimal price;
 }
