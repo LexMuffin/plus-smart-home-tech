@@ -13,6 +13,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @AllArgsConstructor
+@NoArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ShoppingCart {
@@ -29,7 +30,11 @@ public class ShoppingCart {
     ShopingCartState shopingCartState;
 
     @ElementCollection
-    @CollectionTable(name = "products_in_shopping_carts", joinColumns = @JoinColumn(name = "shopping_cart_id"))
+    @CollectionTable(
+            name = "products_in_shopping_carts",
+            schema = "carts",
+            joinColumns = @JoinColumn(name = "shopping_cart_id")
+    )
     @MapKeyColumn(name = "product_id")
     @Column(name = "quantity")
     Map<UUID, Integer> products;
