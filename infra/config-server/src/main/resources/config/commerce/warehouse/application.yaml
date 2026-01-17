@@ -1,6 +1,6 @@
 spring:
   application:
-    name: shopping-store
+    name: warehouse
 
   output:
     ansi:

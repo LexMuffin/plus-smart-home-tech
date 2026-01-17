@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.dto.shoppingStore.ProductCategory;
 import ru.yandex.practicum.dto.shoppingStore.ProductDto;
+import ru.yandex.practicum.dto.shoppingStore.QuantityState;
 import ru.yandex.practicum.dto.shoppingStore.SetProductQuantityStateRequest;
 import ru.yandex.practicum.service.ShoppingStoreService;
 
@@ -69,8 +70,12 @@ public class ShoppingStoreController {
 
     @PostMapping("/quantityState")
     @ResponseStatus(HttpStatus.OK)
-    public boolean updateQuantityState(@Valid @RequestBody SetProductQuantityStateRequest request) {
-        log.info("POST Обновление поля по количеству продукта: {}", request.getProductId());
+    public boolean updateQuantityState(UUID productId, QuantityState quantityState) {
+        log.info("POST Обновление поля по количеству продукта: {}", productId);
+        SetProductQuantityStateRequest request = SetProductQuantityStateRequest.builder()
+                .productId(productId)
+                .quantityState(quantityState)
+                .build();
         return shoppingStoreService.updateQuantityState(request);
     }
 }

@@ -38,8 +38,9 @@ public class ShoppingCartController {
     @PutMapping
     @ResponseStatus(HttpStatus.OK)
     public ShoppingCartDto addProductsToShoppingCart(
-            @Valid @NotEmpty @RequestBody Map<@NotNull UUID, @NotNull @Positive Integer> products,
-            @Valid @RequestParam @NotBlank String username) {
+            @Valid @RequestParam @NotBlank String username,
+            @RequestBody(required = false) Map<UUID, Integer> products
+    ) {
         log.info("Добавление товаров в корзину {}: {}", username, products);
         return shoppingCartService.addProductsToShoppingCart(username, products);
     }
@@ -56,7 +57,7 @@ public class ShoppingCartController {
     @ResponseStatus(HttpStatus.OK)
     public ShoppingCartDto removeProductsFromShoppingCart(
             @Valid @RequestParam @NotBlank String username,
-            @Valid @NotEmpty @RequestBody List<@NotNull UUID> products) {
+            @RequestBody(required = false) List<UUID> products) {
         log.info("Удаление товаров из корзины {}: {}", username, products);
         return shoppingCartService.removeProductsFromShoppingCart(username, products);
     }

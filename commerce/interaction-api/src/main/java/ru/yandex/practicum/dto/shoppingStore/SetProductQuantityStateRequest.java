@@ -1,18 +1,22 @@
 package ru.yandex.practicum.dto.shoppingStore;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.NotNull;
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
+import lombok.*;
+import lombok.experimental.FieldDefaults;
 
 import java.util.UUID;
 
 @Data
-@RequiredArgsConstructor
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class SetProductQuantityStateRequest {
 
     @NotNull
-    private UUID productId;
+    UUID productId;
 
     @NotNull
-    private QuantityState quantityState;
+    QuantityState quantityState;
 }

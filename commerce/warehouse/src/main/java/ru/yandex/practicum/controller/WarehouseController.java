@@ -40,7 +40,7 @@ public class WarehouseController implements WarehouseApi {
     @Override
     @PostMapping("/add")
     @ResponseStatus(HttpStatus.OK)
-    public void increaseProductQuantity(AddProductToWarehouseRequest request) {
+    public void increaseProductQuantity(@Valid @RequestBody AddProductToWarehouseRequest request) {
         log.debug("Пополнение запасов: {}", request);
         warehouseService.increaseProductQuantity(request);
     }

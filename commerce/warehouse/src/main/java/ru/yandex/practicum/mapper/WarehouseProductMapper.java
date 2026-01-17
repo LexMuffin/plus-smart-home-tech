@@ -12,16 +12,7 @@ public interface WarehouseProductMapper {
 
     WarehouseProductMapper INSTANCE = Mappers.getMapper(WarehouseProductMapper.class);
 
-    @Mapping(target = "productId", source = "productId")
-    @Mapping(target = "fragile", qualifiedByName = "mapFragile")
-    @Mapping(target = "dimension", source = "dimension")
-    @Mapping(target = "quantity", constant = "0")
     WarehouseProduct toEntity(NewProductInWarehouseRequest request);
 
     Dimension toDimension(DimensionDto dto);
-
-    @Named("mapFragile")
-    default boolean mapFragile(Boolean fragile) {
-        return fragile != null && fragile;
-    }
 }
