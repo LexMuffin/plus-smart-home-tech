@@ -6,34 +6,29 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.yandex.practicum.api.shoppingCart.ShoppingCartApi;
 import ru.yandex.practicum.api.warehouse.WarehouseApi;
 import ru.yandex.practicum.dto.shoppingCart.ChangeProductQuantityRequest;
 import ru.yandex.practicum.dto.shoppingCart.ShopingCartState;
 import ru.yandex.practicum.dto.shoppingCart.ShoppingCartDto;
-import ru.yandex.practicum.dto.warehouse.BookedProductsDto;
 import ru.yandex.practicum.exception.shoppingCart.NoProductsInShoppingCartException;
 import ru.yandex.practicum.exception.shoppingCart.NotAuthorizedException;
 import ru.yandex.practicum.mapper.ShoppingCartMapper;
 import ru.yandex.practicum.model.ShoppingCart;
 import ru.yandex.practicum.repository.ShoppingCartRepository;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
 @AllArgsConstructor
 @Service
+@Transactional(readOnly = true)
 public class ShoppingCartServiceImpl implements ShoppingCartService {
 
     private final ShoppingCartRepository shoppingCartRepository;
     private final WarehouseApi warehouseApi;
 
     @Override
-    @Transactional(readOnly = true)
     public ShoppingCartDto getShoppingCart(String username) {
         log.debug("Получение корзины для пользователя {}", username);
         checkUsername(username);
@@ -44,34 +39,33 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
     }
 
     @Override
+    @Transactional
     public ShoppingCartDto addProductsToShoppingCart(String username, Map<UUID, Integer> products) {
         log.debug("Добавление в корзину продуктов {} для пользователя {}", products, username);
 
         checkUsername(username);
+
+        if (products == null || products.isEmpty()) {
+            log.warn("Попытка добавления пустого списка товаров для пользователя {}", username);
+            return getShoppingCart(username);
+        }
+
         ShoppingCart shoppingCart = shoppingCartRepository.findByUsername(username)
                 .orElseGet(() -> createShoppingCart(username));
 
-        // Проверяем, активна ли корзина
-        if (shoppingCart.getShopingCartState().equals(ShopingCartState.DEACTIVATED)) {
+        if (shoppingCart.getShopingCartState() == ShopingCartState.DEACTIVATED) {
             throw new IllegalArgumentException("Корзина деактивирована");
         }
 
-        // Инициализируем если null
         if (shoppingCart.getProducts() == null) {
             shoppingCart.setProducts(new HashMap<>());
         }
 
-        if (products == null) {
-            products = new HashMap<>();
-        }
-
-        // Фильтруем только положительные количества
         Map<UUID, Integer> validProducts = products.entrySet().stream()
                 .filter(entry -> entry.getValue() != null && entry.getValue() > 0)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
         if (!validProducts.isEmpty()) {
-            // Проверяем наличие на складе перед добавлением (как в первой реализации)
             try {
                 ShoppingCartDto checkDto = ShoppingCartDto.builder()
                         .shoppingCartId(shoppingCart.getShoppingCartId())
@@ -80,14 +74,25 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
                 warehouseApi.checkAvailability(checkDto);
             } catch (FeignException e) {
                 log.error("Warehouse check failed: {}", e.getMessage());
-                throw new IllegalStateException("Не удалось проверить наличие товаров на складе");
+                log.error("Ошибка при проверке наличия товаров на складе: {}", e.getMessage());
+
+                if (e.status() == 400) {
+                    throw new IllegalArgumentException("Товары недоступны в запрашиваемом количестве");
+                }
+
+                log.warn("Сервис склада временно недоступен. Товары добавлены в корзину без проверки.");
             }
 
-            // Добавляем в корзину
-            shoppingCart.getProducts().putAll(validProducts);
+            Map<UUID, Integer> currentProducts = shoppingCart.getProducts();
+            validProducts.forEach((productId, quantity) -> {
+                Integer currentQuantity = currentProducts.getOrDefault(productId, 0);
+                currentProducts.put(productId, currentQuantity + quantity);
+            });
+
+            shoppingCart.setProducts(currentProducts);
+            shoppingCart = shoppingCartRepository.save(shoppingCart);
         }
 
-        shoppingCart = shoppingCartRepository.save(shoppingCart);
         return ShoppingCartMapper.INSTANCE.toDto(shoppingCart);
     }
 
@@ -110,10 +115,15 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
 
         checkUsername(username);
 
+        if (products == null || products.isEmpty()) {
+            log.warn("Попытка удаления пустого списка товаров для пользователя {}", username);
+            return getShoppingCart(username);
+        }
+
         ShoppingCart shoppingCart = shoppingCartRepository.findByUsername(username)
                 .orElseThrow(() -> new NotFoundException("Корзины пользователя " + username + " не существует"));
 
-        if (shoppingCart.getShopingCartState().equals(ShopingCartState.DEACTIVATED)) {
+        if (shoppingCart.getShopingCartState() == ShopingCartState.DEACTIVATED) {
             throw new IllegalArgumentException("Корзина деактивирована");
         }
 
@@ -121,11 +131,11 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
             shoppingCart.setProducts(new HashMap<>());
         }
 
-        if (shoppingCart.getProducts().isEmpty()) {
+        Map<UUID, Integer> cartProducts = shoppingCart.getProducts();
+        if (cartProducts.isEmpty()) {
             throw new NoProductsInShoppingCartException("В корзине отсутствуют продукты для удаления");
         }
 
-        Map<UUID, Integer> cartProducts = shoppingCart.getProducts();
         List<UUID> missingProducts = products.stream()
                 .filter(productId -> !cartProducts.containsKey(productId))
                 .toList();
@@ -145,35 +155,77 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
     }
 
     @Override
+    @Transactional
     public ShoppingCartDto changeProductQuantity(String username, ChangeProductQuantityRequest request) {
-        log.debug("Изменения количества продуктов для {} у пользовтеля {}", request, username);
+        log.debug("Изменения количества продуктов для {} у пользователя {}", request, username);
+
         checkUsername(username);
+
+        if (request == null) {
+            throw new IllegalArgumentException("Запрос не может быть пустым");
+        }
+
+        if (request.getProductId() == null) {
+            throw new IllegalArgumentException("ID продукта не может быть пустым");
+        }
+
+        if (request.getNewQuantity() == null || request.getNewQuantity() < 0) {
+            throw new IllegalArgumentException("Новое количество должно быть неотрицательным числом");
+        }
+
         ShoppingCart shoppingCart = shoppingCartRepository.findByUsername(username)
                 .orElseThrow(() -> new NotFoundException("Корзины пользователя " + username + " не существует"));
-        if (shoppingCart.getShopingCartState().equals(ShopingCartState.DEACTIVATED)) {
+
+        if (shoppingCart.getShopingCartState() == ShopingCartState.DEACTIVATED) {
             throw new IllegalArgumentException("Корзина уже деактивирована");
         }
-        shoppingCart.getProducts().put(request.getProductId(), request.getNewQuantity());
+
+        if (shoppingCart.getProducts() == null) {
+            shoppingCart.setProducts(new HashMap<>());
+        }
+
+        if (!shoppingCart.getProducts().containsKey(request.getProductId()) && request.getNewQuantity() > 0) {
+            throw new NoProductsInShoppingCartException("Товар не найден в корзине");
+        }
+
+        if (request.getNewQuantity() == 0) {
+            shoppingCart.getProducts().remove(request.getProductId());
+        } else {
+            shoppingCart.getProducts().put(request.getProductId(), request.getNewQuantity());
+        }
+
         shoppingCart = shoppingCartRepository.save(shoppingCart);
-        ShoppingCartDto shoppingCartDto = ShoppingCartMapper.INSTANCE.toDto(shoppingCart);
-        warehouseApi.checkAvailability(shoppingCartDto);
-        return shoppingCartDto;
+
+        if (request.getNewQuantity() > 0) {
+            try {
+                ShoppingCartDto shoppingCartDto = ShoppingCartMapper.INSTANCE.toDto(shoppingCart);
+                warehouseApi.checkAvailability(shoppingCartDto);
+            } catch (FeignException e) {
+                log.error("Warehouse check failed: {}", e.getMessage());
+                if (e.status() == 400) {
+                    throw new IllegalArgumentException("Товар недоступен в запрашиваемом количестве");
+                }
+                log.warn("Сервис склада временно недоступен при изменении количества товара.");
+            }
+        }
+
+        return ShoppingCartMapper.INSTANCE.toDto(shoppingCart);
     }
 
     private void checkUsername(String username) {
-        log.info("Проверка имени пользователя: {}", username);
+        log.debug("Проверка имени пользователя: {}", username);
         if (username == null || username.isBlank()) {
             throw new NotAuthorizedException("Имя пользователя должно быть заполнено");
         }
     }
 
+    @Transactional
     private ShoppingCart createShoppingCart(String username) {
         ShoppingCart newShoppingCart = ShoppingCart.builder()
                 .username(username)
                 .shopingCartState(ShopingCartState.ACTIVE)
                 .products(new HashMap<>())
                 .build();
-        ShoppingCart createdShoppingCart = shoppingCartRepository.save(newShoppingCart);
-        return createdShoppingCart;
+        return shoppingCartRepository.save(newShoppingCart);
     }
 }
