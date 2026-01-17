@@ -17,10 +17,8 @@ import ru.yandex.practicum.model.WarehouseProduct;
 import ru.yandex.practicum.repository.WarehouseProductRepository;
 
 import java.security.SecureRandom;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -36,10 +34,13 @@ public class WarehouseServiceImpl implements WarehouseService{
     @Transactional
     public void addNewProduct(NewProductInWarehouseRequest request) {
         log.debug("Добавление нового продукта {}", request);
-        if (warehouseProductRepository.existsById(UUID.fromString(request.getProductId()))) {
+        if (warehouseProductRepository.existsById(request.getProductId())) {
             throw new SpecifiedProductAlreadyInWarehouseException("Такой продукт уже существует");
         }
         WarehouseProduct warehouseProduct = WarehouseProductMapper.INSTANCE.toEntity(request);
+        if (warehouseProduct.getQuantity() == null) {
+            warehouseProduct.setQuantity(0L);
+        }
         warehouseProductRepository.save(warehouseProduct);
     }
 
@@ -73,27 +74,45 @@ public class WarehouseServiceImpl implements WarehouseService{
     }
 
     private BookedProductsDto calculateCartDetails(Map<UUID, Integer> items, Map<UUID, Long> missingProducts) {
-        double totalWeight = 0.0;
-        double totalVolume = 0.0;
-        boolean anyFragile = false;
-
-        for (Map.Entry<UUID, Integer> entry : items.entrySet()) {
-            WarehouseProduct warehouseProduct = warehouseProductRepository.findById(entry.getKey())
-                    .orElseThrow(() -> new NoSpecifiedProductInWarehouseException("Такого продукта не существует"));
-
-            if (warehouseProduct.getQuantity() < entry.getValue()) {
-                missingProducts.put(entry.getKey(), entry.getValue() - warehouseProduct.getQuantity());
-            } else {
-                totalVolume += warehouseProduct.getDimension().volume() * entry.getValue();
-                totalWeight += warehouseProduct.getWeight() * entry.getValue();
-                anyFragile = anyFragile || Boolean.TRUE.equals(warehouseProduct.getFragile());
-            }
+        if (items == null || items.isEmpty()) {
+            return emptyCart();
         }
 
+        List<WarehouseProduct> products = warehouseProductRepository.findAllByProductIdIn(items.keySet());
+
+        Set<UUID> foundIds = products.stream()
+                .map(WarehouseProduct::getProductId)
+                .collect(Collectors.toSet());
+        log.debug("Проверка наличия продуктов на складе {}", foundIds);
+
+        List<UUID> missingIds = items.keySet().stream()
+                .filter(id -> !foundIds.contains(id))
+                .toList();
+
+        if (!missingIds.isEmpty()) {
+            throw new NoSpecifiedProductInWarehouseException("Товары не найдены: " + missingIds);
+        }
+
+            double[] calculations = {0, 0, 0};
+
+            products.forEach(product -> {
+                        Integer q = items.get(product.getProductId());
+                        if (product.getQuantity() < q) {
+                            missingProducts.put(product.getProductId(), (long) (q - product.getQuantity()));
+                        } else {
+                            calculations[0] += product.getWeight() * q;
+                            calculations[1] += product.getDimension().volume() * q;
+                            calculations[2] = Math.max(
+                                    calculations[2],
+                                    Boolean.TRUE.equals(product.getFragile()) ? 1.0 : 0.0
+                            );
+                        }
+                    });
+
         return BookedProductsDto.builder()
-                .deliveryWeight(totalWeight)
-                .deliveryVolume(totalVolume)
-                .fragile(anyFragile)
+                .deliveryWeight(calculations[0])
+                .deliveryVolume(calculations[1])
+                .fragile(calculations[2] > 0.5)
                 .build();
     }
 

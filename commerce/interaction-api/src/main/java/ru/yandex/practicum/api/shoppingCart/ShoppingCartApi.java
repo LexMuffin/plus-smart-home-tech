@@ -22,7 +22,7 @@ public interface ShoppingCartApi {
 
     @PutMapping
     ShoppingCartDto addProductToShoppingCart(
-            @RequestBody @NotEmpty Map<@NotNull UUID, @NotNull @Positive Long> products,
+            @RequestBody @NotEmpty Map<@NotNull UUID, @NotNull @Positive Integer> products,
             @RequestParam @NotBlank String username);
 
     @DeleteMapping

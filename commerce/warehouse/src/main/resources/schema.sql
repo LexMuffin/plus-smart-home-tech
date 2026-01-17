@@ -7,5 +7,5 @@ CREATE TABLE IF NOT EXISTS warehouse.products (
     height DOUBLE PRECISION,
     depth DOUBLE PRECISION,
     weight DOUBLE PRECISION NOT NULL,
-    quantity BIGINT NOT NULL
+    quantity BIGINT
 );

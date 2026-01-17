@@ -6,6 +6,8 @@ import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.util.UUID;
+
 import static lombok.AccessLevel.PRIVATE;
 
 @Data
@@ -15,8 +17,8 @@ import static lombok.AccessLevel.PRIVATE;
 @FieldDefaults(level = PRIVATE)
 public class NewProductInWarehouseRequest {
 
-    @NotBlank
-    String productId;
+    @NotNull
+    UUID productId;
 
     @NotNull
     Boolean fragile;

@@ -28,8 +28,8 @@ public class WarehouseProduct {
     Dimension dimension;
 
     @Column(name = "weight", nullable = false)
-    private double weight;
+    Double weight;
 
     @Column(name = "quantity", nullable = false)
-    private long quantity;
+    Long quantity;
 }

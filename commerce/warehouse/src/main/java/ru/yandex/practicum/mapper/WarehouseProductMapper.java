@@ -7,7 +7,7 @@ import ru.yandex.practicum.dto.warehouse.NewProductInWarehouseRequest;
 import ru.yandex.practicum.model.WarehouseProduct;
 import ru.yandex.practicum.model.Dimension;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = org.mapstruct.MappingConstants.ComponentModel.SPRING)
 public interface WarehouseProductMapper {
 
     WarehouseProductMapper INSTANCE = Mappers.getMapper(WarehouseProductMapper.class);
