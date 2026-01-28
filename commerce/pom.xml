@@ -11,5 +11,10 @@
 
     <artifactId>commerce</artifactId>
     <packaging>pom</packaging>
+    <modules>
+        <module>order</module>
+        <module>payment</module>
+        <module>delivery</module>
+    </modules>
 
 </project>
